@@ -1,0 +1,12 @@
+{
+    "parser": "@typescript-eslint/parser",
+    "extends": ["plugin:@typescript-eslint/recommended"],
+    "parserOptions": { "ecmaVersion": 2018, "sourceType": "module" },
+    "rules": {
+      "quotes": ["warn", "single"], // Advertencia en comillas dobles
+      "semi": ["warn", "always"], // error si olvidamos ; al final
+      "max-len": ["error", { "code": 120, "ignoreComments": true }], // máximo de 100 caracteres por línea. Podría haber más reglas (no premitir variables any...)
+      "@typescript-eslint/no-unused-vars" : "off"//Hace que las funciones que no se usen, no de error, como por ejemplo NextFunction
+    }
+  }
+  

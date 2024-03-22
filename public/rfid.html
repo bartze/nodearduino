@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estado RFID</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+</head>
+
+<body>
+    <main class="container">
+        <h1 class="display-1">Estado RFID</h1>
+        <hr>
+        <div class="row">
+            <div class="col-9">
+                <p class="display-6">Acceso:
+                    <span id="acceso"></span>
+                </p>
+                <p class="display-6">Tarjeta número:
+                    <span id="clave"></span>
+                </p>
+            </div>
+            <div class="col-3">
+                <p id="hora" class="lead"></p>
+            </div>
+        </div>
+        <hr class="mt-4">
+    </main>
+    <footer>&copy; A Team - 2024</footer>
+    <script type="module">
+
+        // Importa las librerías necesarias
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js';
+        import { getFirestore, query, collection, onSnapshot, orderBy, Timestamp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js';
+
+        // Tu configuración de Firebase (reemplaza con tus credenciales)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDRn0-PCgBDX2a9mcQtFCbUaWR6Zou2Z-k",
+            authDomain: "arduinoled-42cc1.firebaseapp.com",
+            projectId: "arduinoled-42cc1",
+            storageBucket: "arduinoled-42cc1.appspot.com",
+            messagingSenderId: "343912553416",
+            appId: "1:343912553416:web:90983163d85b3c558befd"
+        };
+
+        // Inicializa Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Consulta los datos de la colección 'usuarios' ordenados por hora descendente
+        const q = query(collection(db, 'usuarios'), orderBy('hora', 'desc'));
+
+        // Función para actualizar el estado RFID
+        const updateEstadoRfid = (estadoRfid) => {
+            const estado = estadoRfid.data().estado;
+            console.log(estado);
+            const clave = estadoRfid.data().clave;
+            const accesoElement = document.querySelector("#acceso");
+            const accesoClave = document.querySelector("#clave");
+            const timeStamp = new Timestamp(estadoRfid.data().hora.seconds, estadoRfid.data().hora.nanoseconds);
+            const fecha = `${timeStamp.toDate().toLocaleDateString()} - ${timeStamp.toDate().toLocaleTimeString()}`;
+
+            accesoElement.textContent = estado
+            accesoClave.textContent = clave;
+            hora.textContent = fecha;
+        };
+
+        // Listener para escuchar los cambios en la base de datos
+        onSnapshot(q, (data) => {
+            const ultimoAcceso = data.docs[0]
+            updateEstadoRfid(ultimoAcceso);
+        });
+
+        // Detener el listener cuando ya no sea necesario (por ejemplo, al cerrar la página)
+        // unsubscribe();
+    </script>
