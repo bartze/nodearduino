@@ -1,0 +1,97 @@
+/*
+PINOUT de como conectamos el Modulo al Arduino:
+RC522     Uno/Nano     MEGA
+SDA         D10          D9
+SCK         D13          D52
+MOSI        D11          D51
+MISO        12           D50
+IRQ         N/C          N/C
+GND         GND          GND
+RST         D9           D8
+3.3V       3.3V         3.3V
+*/
+//Incluimos las librerias del SPI y del RFID
+#include <SPI.h>
+#include <RFID.h>
+
+//Se definen los pines que son puntuales para este Modulo
+//Que son el Reset y el SS (Select)
+#define RST_PIN 9
+#define SS_PIN 10
+
+// Creamos la Clase RFID
+RFID tarjeta_rfid(SS_PIN, RST_PIN);
+
+// Creamos un array con el dato que quiero chequear
+// Este código lo obtenemos del ejemplo de lectura
+
+const int id_usuario[5] = { 34, 213, 254, 100, 109 };
+
+const int altavoz = 2;
+
+// Función para verificar si el número de serie de la tarjeta coincide con el id_usuario
+bool chequeo_tarjeta() {
+  tarjeta_rfid.readCardSerial();
+  for (int i = 0; i < 5; i++) {
+    // Si no coincide una posición devolvemos false
+    if (tarjeta_rfid.serNum[i] != id_usuario[i]) {
+      return false;
+    }
+  }
+  // Si llegamos hasta aquí, es porque todas las posiciones coinciden
+  return true;
+}
+
+void setup() {
+  pinMode(4, OUTPUT);
+  pinMode(3, OUTPUT);
+  Serial.begin(9600);
+
+  //Con estas 2 funciones se inicializa el modulo
+  SPI.begin();
+  tarjeta_rfid.init();
+
+  // Serial.println("Apoye su tarjeta o tag RFID");
+}
+
+void loop() {
+  // Si se produce una lectura RFID
+  if (tarjeta_rfid.isCard()) {
+
+    // Leemos el número de serie de la tarjeta. 
+    // ESTO NO SE TOCA!!
+    tarjeta_rfid.readCardSerial();
+
+    // Imprimimos el número de serie de la tarjeta
+    // Serial.print("Número de serie: ");
+    
+    String tarjeta = "";
+    for (int i = 0; i < 5; i++) {
+      tarjeta += tarjeta_rfid.serNum[i];
+      if (i < 4) {
+        tarjeta += ", ";
+      }
+    }
+    Serial.println("{\"clave\":\""+tarjeta+"\"}");
+    // Serial.print("clave\":\"");
+    // Serial.print(tarjeta);
+    // Serial.println("\"}");
+
+    //   if (chequeo_tarjeta() == true)
+    //   {
+    //     // Serial.println("{\"estado\":\"Acceso Aceptado\",\"clave\":\""+tarjeta+"\"}");
+    //     Serial.println("clave\":\""+tarjeta+"\"}");
+
+    //   }
+    //   else
+    //   {
+    //  Serial.println("{\"estado\":\"Acceso Denegado\",\"clave\":\""+tarjeta+"\"}");
+    // //  Serial.println("clave\":\""+tarjeta+"\"}");
+    //     digitalWrite(3, HIGH);
+    //     delay(2000);
+    //     digitalWrite(3, LOW);
+    //   }
+  }
+
+  delay(1000);
+}
