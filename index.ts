@@ -15,6 +15,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const arduinoSerialPort = new SerialPort({ path: 'COM6', baudRate: 9600 });
+const arduinoSerialPort2 = new SerialPort({ path: 'COM7', baudRate: 9600 });
 const parser = arduinoSerialPort.pipe(new ReadlineParser({ delimiter: '\r\n' }));
 
 const db = getFirestore(firebase);
@@ -32,19 +33,26 @@ arduinoSerialPort.on('open', () => {
 // });
 
 parser.on('data', async (data) => {
-  const lectura:IRfid = JSON.parse(data);
+  const lectura: IRfid = JSON.parse(data);
   console.log(lectura);
   try {
     const dataRfid: IRfid = {
       estado: lectura.estado,
-      hora: new Date(), 
+      hora: new Date(),
       clave: lectura.clave
     };
     if (lectura.clave) {
-      arduinoSerialPort.write('ACCESO_PERMITIDO');
+      const claveCorrecta = '34, 213, 254, 100, 109';
+      if (claveCorrecta === lectura.clave) {
+        console.log('Correcto');
+        arduinoSerialPort2.write('ACCESO_PERMITIDO');
+      } else { 
+        console.log('DENEGADO');
+        arduinoSerialPort2.write('ACCESO_DENEGADO'); 
+      }
     }
 
-    await addDoc(collection(db, 'usuarios'), dataRfid);
+    await addDoc(collection(db, 'accesos'), dataRfid);
   } catch (error) {
     console.log(error);
   }
@@ -54,34 +62,3 @@ app.listen(port, () => {
   console.log('Servidor en ejecución en puerto ' + port);
 });
 
-//// Escuchar eventos de datos del puerto serial
-// parser.on('data', async (data) => {
-//   // Procesar los datos recibidos de Arduino
-//   try {
-//     const { tarjetaId, autorizado } = JSON.parse(data);
-//     console.log(`Tarjeta: ${tarjetaId}, Autorizado: ${autorizado}`);
-
-//     // Consultar la base de datos para verificar la autorización de la tarjeta
-//     const tarjetaRef = db.collection('tarjetas').doc(tarjetaId);
-//     const tarjetaDoc = await tarjetaRef.get();
-
-//     if (tarjetaDoc.exists) {
-//       const nombreUsuario = tarjetaDoc.data().nombre;
-//       if (autorizado) {
-//         console.log(`Acceso concedido a ${nombreUsuario}`);
-//         // Enviar mensaje a Arduino para permitir el acceso
-//         arduinoPort.write('ACCESO_PERMITIDO');
-//       } else {
-//         console.log(`Acceso denegado a ${nombreUsuario}`);
-//         // Enviar mensaje a Arduino para denegar el acceso
-//         arduinoPort.write('ACCESO_DENEGADO');
-//       }
-//     } else {
-//       console.log('Tarjeta no registrada');
-//       // Enviar mensaje a Arduino para denegar el acceso
-//       arduinoPort.write('ACCESO_DENEGADO');
-//     }
-//   } catch (error) {
-//     console.error('Error:', error);
-//   }
-// });

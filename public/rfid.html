@@ -47,8 +47,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Consulta los datos de la colección 'usuarios' ordenados por hora descendente
-        const q = query(collection(db, 'usuarios'), orderBy('hora', 'desc'));
+        // Consulta los datos de la colección 'accesos' ordenados por hora descendente
+        const q = query(collection(db, 'accesos'), orderBy('hora', 'desc'));
 
         // Función para actualizar el estado RFID
         const updateEstadoRfid = (estadoRfid) => {
