@@ -3,9 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { SerialPort } from 'serialport';
 import { ReadlineParser } from '@serialport/parser-readline';
-// https://serialport.io/docs/api-parser-readline
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
-import { ILed } from './interfaces/led.interface';
+import { getFirestore, collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { firebase } from './firebase/config';
 import { IRfid } from './interfaces/rfid.interface';
 
@@ -28,31 +26,47 @@ arduinoSerialPort.on('open', () => {
   console.log('Conexión con placa Arduino establecida');
 });
 
-// arduinoSerialPort.on('data', (data) => {
-//   console.log(data.toString());
-// });
-
 parser.on('data', async (data) => {
   const lectura: IRfid = JSON.parse(data);
   console.log(lectura);
+
   try {
-    const dataRfid: IRfid = {
-      estado: lectura.estado,
-      hora: new Date(),
-      clave: lectura.clave
-    };
+    const usuariosRef = collection(db, 'usuarios');
+    const usuariosSnapshot = await getDocs(usuariosRef);
+    const clavesRegistradas = usuariosSnapshot.docs.map(doc => doc.data().clave);
+
+    const q = query(collection(db, 'usuarios'), where('clave', '==', lectura.clave));
+    const querySnapshot = await getDocs(q);
+    const users = querySnapshot.docs.map(doc => doc.data());
+    const hasActiveUser = users.some(user => user.activo === true);
+
     if (lectura.clave) {
-      const claveCorrecta = '34, 213, 254, 100, 109';
-      if (claveCorrecta === lectura.clave) {
-        console.log('Correcto');
-        arduinoSerialPort2.write('ACCESO_PERMITIDO');
-      } else { 
-        console.log('DENEGADO');
-        arduinoSerialPort2.write('ACCESO_DENEGADO'); 
+      if (hasActiveUser) {
+        arduinoSerialPort2.write('Hola: ' + users[0].nombre);
+         //arduinoSerialPort2.write('1');
+        // { estado: 'Acceso Denegado', clave: '34, 213, 254, 100, 109' }
+        // [ { nombre: 'Iñaki', clave: '34, 213, 254, 100, 109', activo: true } ]
+        // Acceso permitido
+
+        // const encoder = new TextEncoder();
+        // const utf8Array = encoder.encode(nombre);
+        // const utf8String = String.fromCharCode.apply(null, utf8Array);
+        
+        console.log('Acceso permitido');
+
+        //IMPRIMIR STRING EN LCD
+        // arduinoSerialPort2.write(nombre[0] );
+        // arduinoSerialPort2.write('ACCESO_PERMITIDO');
+      } else {
+        //BOOLEAN FALSE
+        arduinoSerialPort2.write('0');
+        console.log('Acceso denegado');
+        arduinoSerialPort2.write('ACCESO_DENEGADO');
       }
     }
+    // "34, 213, 254, 100, 109"
 
-    await addDoc(collection(db, 'accesos'), dataRfid);
+    await addDoc(collection(db, 'accesos'), lectura);
   } catch (error) {
     console.log(error);
   }
