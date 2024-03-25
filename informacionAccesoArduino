@@ -1,0 +1,61 @@
+#include <EEPROM.h>
+#include <Servo.h>
+#include <LiquidCrystal.h>
+const int potPin = A0;
+//const int buttonPin = 6;
+const int ledVerde = 8;
+Servo servo_9;
+
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+void setup() {
+  //pinMode(INPUT_PULLUP);
+  Serial.begin(9600);
+  
+  servo_9.attach(9);
+  
+  lcd.begin(16, 2);
+  lcd.setCursor(0, 0);
+  lcd.print("HOLA VECINOS: ");
+  int initialAngle = EEPROM.read(0);
+  lcd.setCursor(0, 1);
+  lcd.print(initialAngle);
+  servo_9.write(initialAngle);
+  delay(2000);
+  lcd.clear();
+}
+
+void loop() {
+  int potValue = map(analogRead(potPin), 0, 1023, 0, 180);
+  Serial.println(potValue);
+  servo_9.write(potValue);
+  delay(10);
+
+  if (Serial.available() > 0) { // Verifica si hay datos disponibles en el puerto serie
+    String input = Serial.readStringUntil('\n'); // Lee la cadena recibida hasta encontrar un salto de línea
+    input.trim(); // Elimina los espacios en blanco al principio y al final de la cadena
+    if (input.equals("0")) { // Comprueba si la cadena recibida es "ACCESO_DENEGADO"
+      int dato = potValue;
+      Serial.println(dato);
+      EEPROM.update(0, dato);
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print(input);
+      delay(2000);
+      lcd.clear();
+    } else {
+      int dato = potValue;
+      Serial.println(dato);
+      EEPROM.update(0, dato);
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Acceso permitido");
+      digitalWrite(ledVerde, HIGH);
+      servo_9.write(180);
+      delay(2000);
+      lcd.clear();
+      digitalWrite(ledVerde, LOW);
+    }
+  }
+}
